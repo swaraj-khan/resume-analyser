@@ -1,0 +1,23 @@
+# Chainlit configuration file
+chainlit_server:
+  cors:
+    allow_origins:
+      - "*"
+  root_path: ""
+
+ui:
+  name: Resume Analyzer
+  description: AI-powered resume analysis and feedback
+  hide_cot: false
+  theme:
+    primary: "#2563eb"
+
+# Authentication configuration
+oauth:
+  github:
+    client_id: ${OAUTH_GITHUB_CLIENT_ID}
+    client_secret: ${OAUTH_GITHUB_CLIENT_SECRET}
+
+# Server configuration
+server:
+  max_message_size: 50000000  # 50MB for PDF files

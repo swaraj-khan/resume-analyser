@@ -1,12 +1,16 @@
 import os
 import sys
+from pathlib import Path
 
-# Add the parent directory to the path so we can import app.py
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the root directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Import our Chainlit app
-import app
+import chainlit as cl
+from chainlit.server import app
 
-# This is necessary for Vercel serverless functions
-# It exports the Chainlit ASGI app
-from chainlit.server import app as chainlit_app
+# Import our app file (which will register Chainlit handlers)
+import app as resume_app
+
+# Export the ASGI app explicitly
+# This is the key line that Vercel needs
+handler = app
