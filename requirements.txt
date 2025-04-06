@@ -1,8 +1,0 @@
-chainlit
-python-dotenv
-supabase
-anthropic
-requests
-PyGithub
-brave-search
-PyPDF2
