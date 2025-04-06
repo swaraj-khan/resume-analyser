@@ -120,7 +120,7 @@ def analyze_resume(resume_text, user_name=None):
         
         # Send the resume text to Claude for analysis
         response = anthropic_client.messages.create(
-            model="claude-3-7-sonnet-20240229",  # Using a specific version for stability
+            model="claude-3-sonnet-20240229",  # Using a specific version for stability
             system=system_prompt,
             messages=[
                 {"role": "user", "content": f"Here is a resume to analyze:\n\n{resume_text}\n\nPlease provide detailed feedback."}
@@ -129,7 +129,7 @@ def analyze_resume(resume_text, user_name=None):
             temperature=0.5
         )
         
-        return response.content[0].text
+        return response.content
     except Exception as e:
         print(f"Error analyzing resume: {e}")
         raise
@@ -302,7 +302,7 @@ async def on_message(message: cl.Message):
             # Generate response to the follow-up question
             async with cl.Step(name="Answering your question..."):
                 follow_up_response = anthropic_client.messages.create(
-                    model="claude-3-7-sonnet-20240229",  # Using a specific version for stability
+                    model="claude-3-sonnet-20240229",  # Using a specific version for stability
                     system=follow_up_system_prompt,
                     messages=[
                         {"role": "user", "content": message.content}
@@ -312,7 +312,7 @@ async def on_message(message: cl.Message):
                 )
             
             # Send the follow-up response
-            follow_up_content = follow_up_response.content[0].text
+            follow_up_content = follow_up_response.content
             await cl.Message(
                 content=follow_up_content,
                 author="Resume Analyzer"
