@@ -5,24 +5,25 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb",
+        "runtime": "python3.9"
+      }
+    },
+    {
+      "src": "api/test.py",
+      "use": "@vercel/python",
+      "config": {
         "runtime": "python3.9"
       }
     }
   ],
   "routes": [
     {
+      "src": "/test",
+      "dest": "/api/test.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/index.py"
     }
-  ],
-  "env": {
-    "PYTHONPATH": ".",
-    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
-    "SUPABASE_URL": "${SUPABASE_URL}",
-    "SUPABASE_KEY": "${SUPABASE_KEY}",
-    "CHAINLIT_AUTH_SECRET": "${CHAINLIT_AUTH_SECRET}",
-    "OAUTH_GITHUB_CLIENT_ID": "${OAUTH_GITHUB_CLIENT_ID}",
-    "OAUTH_GITHUB_CLIENT_SECRET": "${OAUTH_GITHUB_CLIENT_SECRET}"
-  }
+  ]
 }
