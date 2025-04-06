@@ -5,14 +5,15 @@ import anthropic
 import chainlit as cl
 from dotenv import load_dotenv
 from supabase import create_client
+import tempfile
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Supabase client
 supabase = create_client(
-    "https://bedfheavyxwknljzgmsy.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlZGZoZWF2eXh3a25sanpnbXN5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mzc2NzcwOSwiZXhwIjoyMDU5MzQzNzA5fQ.DSOp7pHDazVtmIj9pvMAFyP0OVSyliQXVnVydOQB_fk"
+    os.getenv("SUPABASE_URL", "https://bedfheavyxwknljzgmsy.supabase.co"),
+    os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlZGZoZWF2eXh3a25sanpnbXN5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mzc2NzcwOSwiZXhwIjoyMDU5MzQzNzA5fQ.DSOp7pHDazVtmIj9pvMAFyP0OVSyliQXVnVydOQB_fk")
 )
 
 # Initialize Anthropic client
@@ -77,15 +78,17 @@ def store_github_user(github_user):
         print(f"Error storing GitHub user in Supabase: {e}")
         return None
 
-# We no longer store resume analyses in Supabase
-# Only storing login information
-
-def extract_resume_text(file_path):
-    """Extract text from a PDF resume"""
+def extract_resume_text(file_content):
+    """Extract text from a PDF resume content"""
     try:
-        print(f"Reading resume from: {file_path}")
+        # Create a temporary file to handle the PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+            temp_file.write(file_content)
+            temp_path = temp_file.name
+        
+        print(f"Reading resume from temporary file: {temp_path}")
         resume_text = ""
-        with open(file_path, "rb") as f:
+        with open(temp_path, "rb") as f:
             pdf_reader = PyPDF2.PdfReader(f)
             print(f"PDF loaded successfully. Pages found: {len(pdf_reader.pages)}")
             for page_num in range(len(pdf_reader.pages)):
@@ -93,6 +96,9 @@ def extract_resume_text(file_path):
                 page_text = page.extract_text()
                 print(f"Page {page_num+1} extracted: {len(page_text)} characters")
                 resume_text += page_text
+        
+        # Clean up the temporary file
+        os.unlink(temp_path)
         
         if not resume_text.strip():
             raise Exception("Empty text extracted from PDF")
@@ -114,7 +120,7 @@ def analyze_resume(resume_text, user_name=None):
         
         # Send the resume text to Claude for analysis
         response = anthropic_client.messages.create(
-            model="claude-3-7-sonnet-latest",
+            model="claude-3-7-sonnet-20240229",  # Using a specific version for stability
             system=system_prompt,
             messages=[
                 {"role": "user", "content": f"Here is a resume to analyze:\n\n{resume_text}\n\nPlease provide detailed feedback."}
@@ -221,9 +227,13 @@ async def on_message(message: cl.Message):
         try:
             # Get the first PDF file
             pdf_file = next(elem for elem in message.elements if elem.mime.endswith('/pdf'))
+            
+            # Read file content into memory
+            with open(pdf_file.path, "rb") as f:
+                file_content = f.read()
 
-            # Extract text from PDF
-            resume_text = extract_resume_text(pdf_file.path)
+            # Extract text from PDF content
+            resume_text = extract_resume_text(file_content)
 
             if not resume_text.strip():
                 await cl.Message(
@@ -236,10 +246,7 @@ async def on_message(message: cl.Message):
             async with cl.Step(name="Analyzing resume..."):
                 analysis_content = analyze_resume(resume_text, user_name)
 
-            # We no longer store analyses in the database
-            # Keeping only the session for the current conversation
-
-            # Store in session instead of database
+            # Store in session
             cl.user_session.set("resume_text", resume_text)
             cl.user_session.set("previous_analysis", analysis_content)
             
@@ -295,7 +302,7 @@ async def on_message(message: cl.Message):
             # Generate response to the follow-up question
             async with cl.Step(name="Answering your question..."):
                 follow_up_response = anthropic_client.messages.create(
-                    model="claude-3-7-sonnet-latest",
+                    model="claude-3-7-sonnet-20240229",  # Using a specific version for stability
                     system=follow_up_system_prompt,
                     messages=[
                         {"role": "user", "content": message.content}
@@ -318,5 +325,6 @@ async def on_message(message: cl.Message):
                 author="Resume Analyzer"
             ).send()
 
+# Entry point for Chainlit app
 if __name__ == "__main__":
     cl.run()
