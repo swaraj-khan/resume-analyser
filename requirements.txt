@@ -1,0 +1,5 @@
+anthropic==0.22.0
+chainlit==1.0.401
+PyPDF2==3.0.1
+python-dotenv==1.0.1
+supabase==2.3.1
